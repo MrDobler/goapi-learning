@@ -8,11 +8,13 @@ import (
 )
 
 func setupRouter() *gin.Engine {
+	handler := handlers.NewAlbumHandler()
 	router := gin.Default()
-	router.GET("/albums", handlers.GetAlbums)
-	router.POST("/albums", handlers.AddAlbum)
-	router.PUT("/albums", handlers.EditAlbum)
-	router.DELETE("/albums/:id", handlers.RemoveAlbum)
+	router.GET("/albums", handler.GetAlbums)
+	router.POST("/albums", handler.AddAlbum)
+	router.PUT("/albums", handler.EditAlbum)
+	router.DELETE("/albums/:id", handler.RemoveAlbum)
+	router.GET("/albums/:id", handler.GetAlbumByID)
 
 	return router
 }
