@@ -32,9 +32,7 @@ func GetAlbums(context *gin.Context) {
 func AddAlbum(context *gin.Context) {
 	var newAlbum Album
 
-	err := context.BindJSON(&newAlbum)
-
-	if err != nil {
+	if err := context.BindJSON(&newAlbum); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, err.Error())
 		return
 	}
@@ -66,9 +64,7 @@ func RemoveAlbum(context *gin.Context) {
 func EditAlbum(context *gin.Context) {
 	var albumToEdit Album
 
-	err := context.BindJSON(&albumToEdit)
-
-	if err != nil {
+	if err := context.BindJSON(&albumToEdit); err != nil {
 		context.IndentedJSON(http.StatusBadRequest, HttpResponse{Message: "Bad Request", Status: 400})
 		return
 	}
