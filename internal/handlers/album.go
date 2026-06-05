@@ -5,7 +5,6 @@ import (
 	"goapi/vinyl-store/internal/repository"
 	"log"
 	"net/http"
-	"slices"
 	"strconv"
 
 	"github.com/gin-gonic/gin"
@@ -50,7 +49,6 @@ func (h *AlbumHandler) AddAlbum(context *gin.Context) {
 		context.IndentedJSON(http.StatusInternalServerError, err.Error())
 		return
 	}
-	// h.albums = append(h.albums, newAlbum)
 	context.IndentedJSON(http.StatusCreated, newAlbum)
 }
 
@@ -61,21 +59,16 @@ func (h *AlbumHandler) RemoveAlbum(context *gin.Context) {
 		context.IndentedJSON(http.StatusBadRequest, HttpResponse{Message: "Bad Request", Status: 400})
 	}
 
-	var originalAlbums = len(h.albums)
+	albumId, conversionError := strconv.Atoi(id)
+	if conversionError != nil {
+		log.Println(conversionError.Error())
+		return
+	}
 
-	h.albums = slices.DeleteFunc(h.albums, func(album domain.Album) bool {
-		albumId, conversionError := strconv.Atoi(id)
-		if conversionError != nil {
-			log.Fatalln(conversionError.Error())
-			return false
-		}
-		return album.ID == int64(albumId)
-	})
-
-	if originalAlbums != len(h.albums) {
-		context.IndentedJSON(http.StatusOK, HttpResponse{Message: "Success", Status: 200})
+	if err := h.repository.DeleteAlbum(int64(albumId)); err != nil {
+		context.JSON(http.StatusBadRequest, HttpResponse{Message: err.Error(), Status: 404})
 	} else {
-		context.JSON(http.StatusBadRequest, HttpResponse{Message: "Not Found", Status: 404})
+		context.IndentedJSON(http.StatusOK, HttpResponse{Message: "Success", Status: 200})
 	}
 }
 
@@ -102,7 +95,7 @@ func (h *AlbumHandler) GetAlbumByID(context *gin.Context) {
 	id := context.Param("id")
 	albumId, conversionError := strconv.Atoi(id)
 	if conversionError != nil {
-		log.Fatalln(conversionError.Error())
+		log.Println(conversionError.Error())
 		return
 	}
 

@@ -17,7 +17,7 @@ func NewAlbumRepository(db *sql.DB) *AlbumRepository {
 func (repo *AlbumRepository) GetAll() ([]domain.Album, error) {
 	rows, err := repo.db.Query("SELECT id, title, artist, price FROM albums")
 	if err != nil {
-		log.Fatalln(err.Error())
+		log.Println(err.Error())
 	}
 	defer rows.Close()
 
@@ -25,8 +25,8 @@ func (repo *AlbumRepository) GetAll() ([]domain.Album, error) {
 	for rows.Next() {
 		var album domain.Album
 		if err := rows.Scan(&album.ID, &album.Title, &album.Artist, &album.Price); err != nil {
-			log.Fatalln("Erro ao ler row do banco de dados")
-			log.Fatalln(err)
+			log.Println("Erro ao ler row do banco de dados")
+			log.Println(err)
 			return nil, err
 		}
 
@@ -34,7 +34,7 @@ func (repo *AlbumRepository) GetAll() ([]domain.Album, error) {
 	}
 
 	if err := rows.Err(); err != nil {
-		log.Fatalln("Erro ao iterar sobre o banco de dados")
+		log.Println("Erro ao iterar sobre o banco de dados")
 		return nil, err
 	}
 
@@ -42,12 +42,23 @@ func (repo *AlbumRepository) GetAll() ([]domain.Album, error) {
 }
 
 func (repo *AlbumRepository) InsertAlbum(newAlbum *domain.Album) (*domain.Album, error) {
-	_, err := repo.db.Exec("INSERT INTO albums (title, artist, price) VALUES (?, ?, ?)", newAlbum.Title, newAlbum.Artist, newAlbum.Price)
+	query := "INSERT INTO albums (title, artist, price) VALUES (?, ?, ?) RETURNING id"
+	err := repo.db.QueryRow(query, newAlbum.Title, newAlbum.Artist, newAlbum.Price).Scan(&newAlbum.ID)
 	if err != nil {
-		log.Fatalln("Erro ao inserir album no banco de dados")
-		log.Fatalln(err)
+		log.Println("Erro ao inserir album no banco de dados")
+		log.Println(err)
 		return nil, err
 	}
 
 	return newAlbum, nil
+}
+
+func (repo *AlbumRepository) DeleteAlbum(albumId int64) error {
+	_, err := repo.db.Exec("DELETE FROM albums WHERE id = ?", albumId)
+	if err != nil {
+		log.Println("Erro ao deletear album no banco de dados")
+		log.Println(err)
+		return err
+	}
+	return nil
 }
