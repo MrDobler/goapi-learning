@@ -2,9 +2,11 @@ package handlers
 
 import (
 	"goapi/vinyl-store/internal/domain"
-	"goapi/vinyl-store/internal/mock"
+	"goapi/vinyl-store/internal/repository"
+	"log"
 	"net/http"
 	"slices"
+	"strconv"
 
 	"github.com/gin-gonic/gin"
 )
@@ -15,17 +17,24 @@ type HttpResponse struct {
 }
 
 type AlbumHandler struct {
-	albums []domain.Album
+	albums     []domain.Album
+	repository *repository.AlbumRepository
 }
 
-func NewAlbumHandler() *AlbumHandler {
+func NewAlbumHandler(repo *repository.AlbumRepository) *AlbumHandler {
 	return &AlbumHandler{
-		albums: mock.Albums,
+		albums:     []domain.Album{},
+		repository: repo,
 	}
 }
 
 func (h *AlbumHandler) GetAlbums(context *gin.Context) {
-	context.IndentedJSON(http.StatusOK, h.albums)
+	albums, err := h.repository.GetAll()
+	if err != nil {
+		context.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	context.IndentedJSON(http.StatusOK, albums)
 }
 
 func (h *AlbumHandler) AddAlbum(context *gin.Context) {
@@ -36,7 +45,12 @@ func (h *AlbumHandler) AddAlbum(context *gin.Context) {
 		return
 	}
 
-	h.albums = append(h.albums, newAlbum)
+	var _, err = h.repository.InsertAlbum(&newAlbum)
+	if err != nil {
+		context.IndentedJSON(http.StatusInternalServerError, err.Error())
+		return
+	}
+	// h.albums = append(h.albums, newAlbum)
 	context.IndentedJSON(http.StatusCreated, newAlbum)
 }
 
@@ -50,7 +64,12 @@ func (h *AlbumHandler) RemoveAlbum(context *gin.Context) {
 	var originalAlbums = len(h.albums)
 
 	h.albums = slices.DeleteFunc(h.albums, func(album domain.Album) bool {
-		return album.ID == id
+		albumId, conversionError := strconv.Atoi(id)
+		if conversionError != nil {
+			log.Fatalln(conversionError.Error())
+			return false
+		}
+		return album.ID == int64(albumId)
 	})
 
 	if originalAlbums != len(h.albums) {
@@ -81,9 +100,14 @@ func (h *AlbumHandler) EditAlbum(context *gin.Context) {
 
 func (h *AlbumHandler) GetAlbumByID(context *gin.Context) {
 	id := context.Param("id")
+	albumId, conversionError := strconv.Atoi(id)
+	if conversionError != nil {
+		log.Fatalln(conversionError.Error())
+		return
+	}
 
 	for _, a := range h.albums {
-		if a.ID == id {
+		if a.ID == int64(albumId) {
 			context.IndentedJSON(http.StatusOK, a)
 			return
 		}
