@@ -76,19 +76,16 @@ func (h *AlbumHandler) EditAlbum(context *gin.Context) {
 	var albumToEdit domain.Album
 
 	if err := context.BindJSON(&albumToEdit); err != nil {
-		context.IndentedJSON(http.StatusBadRequest, HttpResponse{Message: "Bad Request", Status: 400})
+		context.IndentedJSON(http.StatusBadRequest, HttpResponse{Message: err.Error(), Status: 400})
 		return
 	}
 
-	for i := range h.albums {
-		if h.albums[i].ID == albumToEdit.ID {
-			h.albums[i] = albumToEdit
-			context.IndentedJSON(http.StatusOK, albumToEdit)
-			return
-		}
+	updatedAlbum, err := h.repository.UdateAlbum(&albumToEdit)
+	if err != nil {
+		context.IndentedJSON(http.StatusInternalServerError, HttpResponse{Message: err.Error(), Status: 500})
 	}
 
-	context.IndentedJSON(http.StatusNotFound, HttpResponse{Message: "Not Found", Status: 404})
+	context.IndentedJSON(http.StatusOK, updatedAlbum)
 }
 
 func (h *AlbumHandler) GetAlbumByID(context *gin.Context) {

@@ -56,9 +56,20 @@ func (repo *AlbumRepository) InsertAlbum(newAlbum *domain.Album) (*domain.Album,
 func (repo *AlbumRepository) DeleteAlbum(albumId int64) error {
 	_, err := repo.db.Exec("DELETE FROM albums WHERE id = ?", albumId)
 	if err != nil {
-		log.Println("Erro ao deletear album no banco de dados")
+		log.Println("Erro ao deletar album no banco de dados")
 		log.Println(err)
 		return err
 	}
 	return nil
+}
+
+func (repo *AlbumRepository) UdateAlbum(newAlbum *domain.Album) (*domain.Album, error) {
+	query := "UPDATE albums SET title = ?, artist = ?, price = ? WHERE id = ?"
+	_, err := repo.db.Exec(query, newAlbum.Title, newAlbum.Artist, newAlbum.Price, newAlbum.ID)
+	if err != nil {
+		log.Println("Erro ao atualizar o album no banco de dados")
+		log.Println(err)
+		return nil, err
+	}
+	return newAlbum, nil
 }
